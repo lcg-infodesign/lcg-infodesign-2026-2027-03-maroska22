@@ -6,11 +6,11 @@ let data;
 let minSaldo = Infinity;
 let maxSaldo = -Infinity;
 
-let margin = 20;
+let margin = 50;
 let gutter = 4;
 
-let topSpace = 100; //spazio per il titolo
-let rightSpace = 230; //spazio per la legenda
+let topSpace = 200; //spazio per il titolo
+let rightSpace = 250; //spazio per la legenda
 
 //valori presi da 0 a 1 per stabilire i limiti del saldo emotivo
 let lowLimit = 0.4; //da 0 a 0.4 saldo basso, da 0.4 a 0.65 saldo medio, da 0.65 a 1 saldo alto
@@ -37,8 +37,6 @@ async function setup() {
     if (saldo > maxSaldo) maxSaldo = saldo;
     if (saldo < minSaldo) minSaldo = saldo;
   }
-
-  noLoop();
 }
 
 //funzione per evitare che i dati mancanti diano problemi bloccando il codice
@@ -54,7 +52,7 @@ function readSaldo(rowNumber) {
 function draw() {
   // put drawing code here
 
-  background(250, 248, 243);
+  background('black');
 
   //griglia
   let gridWidth = windowWidth - rightSpace - 2 * margin;
@@ -69,6 +67,10 @@ function draw() {
   let faceHeight = (gridHeight - (rows - 1) * gutter) / rows;
   let face = min(faceWidth, faceHeight);
 
+  let label = "";
+  let hoverX; 
+  let hoverY;
+
   for (let rowNumber = 0; rowNumber < numberOfCountries; rowNumber++) {
     let col = rowNumber % cols;
     let row = floor(rowNumber / cols);
@@ -76,7 +78,39 @@ function draw() {
     let y = topSpace + row * (face + gutter);
 
      drawGlyph(readSaldo(rowNumber), x, y, face);
+  
+  //verifico se il puntatore si trova sopra la faccina e memorizzo il Paese
+  if (
+    mouseX >= x &&
+    mouseX <= x + face &&
+    mouseY >= y &&
+    mouseY <= y +face
+  ) {
+    label = data.getString(rowNumber, "Country");
+    hoverX = x + face / 2;
+    hoverY = y + face / 2;
+    }
   }
+
+  if (label != "") {
+    noFill();
+    stroke('white');
+    strokeWeight(3);
+    circle(hoverX, hoverY, face + 4);
+    noStroke(); //evidenzio con bordo bianco
+
+    textSize(14);
+    textStyle(BOLD);
+    textAlign(LEFT);
+    let tW = textWidth(label);
+    fill('white');
+    rect(mouseX + 8, mouseY + 8, tW+16, 26);
+    fill('black');
+    text(label, mouseX + 16, mouseY + 26); //inserisco il nome del Paese sopra una targhetta bianca
+  }
+  
+    drawTitle();
+    drawLegend(gridWidth);
 
   }
 
@@ -129,3 +163,60 @@ function gradientColor(t) {
   return lerpColor(color(colorScale.mid), color(colorScale.warm), (t - 0.5) * 2);
   }
 }//lerpColor mi dà un gradiente più preciso invece di solo 3 colori di differenzazione
+
+function drawTitle() {
+  noStroke();
+  fill('white');
+  textAlign(LEFT);
+  textSize(30);
+  textStyle(BOLD);
+  textFont('Inter');
+  const head1 = "Happiness Index";
+  text(head1, margin, margin+20);
+
+  noStroke();
+  fill('white');
+  textSize(16);
+  textStyle(NORMAL);
+  textFont('Inter');
+  const head2 = "I glifi rappresentati visualizzano gli indici medi di felicità per 166 paesi fra il 2005 e il 2020.";
+  text(head2, margin, margin+60);
+
+  const text1 = "La felicità è calcolata in base al saldo emotivo di ogni Paese.";
+  text(text1, margin, margin+90);
+}
+
+function drawLegend(gW) {
+
+  noStroke();
+  textAlign(LEFT);
+  textSize(12);
+  fill('white');
+
+  let xLegend = margin + gW + margin;
+  let yLegend = topSpace+20;
+
+  text("Saldo emotivo =", xLegend, yLegend);
+  text("emozioni positive - emozioni negative", xLegend, yLegend+25);
+
+  text("Gradiente colore", xLegend, yLegend+100);
+  let barW = 200;
+  for (let i = 0; i < barW; i++) {
+    let r = i/barW;
+    fill(gradientColor(r));
+    rect(xLegend+i, yLegend+115, 1, 25);
+  } //il gradiente lo formo con tanti rettangoli sottili colorati diversi
+
+  fill('white');
+  textSize(10);
+  textStyle(ITALIC);
+
+  text("↓ saldo basso", xLegend, yLegend+150);
+  text("saldo alto ↑", xLegend+barW-60, yLegend+150);
+
+  fill('grey');
+  textSize(12);
+
+  text("I glifi neutri non hanno abbastanza", xLegend, yLegend+300);
+  text("dati per determinare il saldo emotivo.", xLegend, yLegend+320);
+}
